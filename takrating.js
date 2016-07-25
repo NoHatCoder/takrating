@@ -1,22 +1,22 @@
 //The game id of the last game of the last update:
-var lastgameid=57018
+var lastgameid=67250
 
 //Rating calculation parameters:
 var initialrating=1000
 var bonusrating=550
 var bonusfactor=60
-var participationlimit=2
+var participationlimit=10
 var participationcutoff=1500
 
 //File names:
-var databasepath="games_anon (8).db"
+var databasepath="games_anon (12).db"
 var resultfile="ratings.txt"
 
 //Statistics parameters, does not affect rating calculation:
 var goodlimit=1700
 var whiteadvantage=130
 var showratingprogression=false
-var playerhistory="ShlktBot"
+var playerhistory="Turing sectenor"
 
 var sqlite3=require("sqlite3")
 var fs=require("fs")
@@ -45,6 +45,26 @@ function main(error){
 		var whiteexpected=0
 		var ratingsum=[]
 		var ratingcount=[]
+		var nametranslate={
+			"alphabot":"alphatak_bot alphabot"
+			,"alphatak_bot":"alphatak_bot alphabot"
+			,"TakticianBot":"TakticianBot TakticianBotDev"
+			,"TakticianBotDev":"TakticianBot TakticianBotDev"
+			,"sectenor":"Turing sectenor"
+			,"Turing":"Turing sectenor"
+			,"SultanPepper":"SultanPepper KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan"
+			,"KingSultan":"SultanPepper KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan"
+			,"PrinceSultan":"SultanPepper KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan"
+			,"SultanTheGreat":"SultanPepper KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan"
+			,"FuhrerSultan":"SultanPepper KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan"
+			,"MaerSultan":"SultanPepper KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan"
+			,"tarontos":"Tarontos tarontos"
+			,"Tarontos":"Tarontos tarontos"
+			,"Ally":"Ally Luffy"
+			,"Luffy":"Ally Luffy"
+			,"Archerion":"Archerion Archerion2"
+			,"Archerion2":"Archerion Archerion2"
+		}
 		for(a=0;a<200;a++){
 			ratingsum[a]=0
 			ratingcount[a]=0
@@ -53,8 +73,9 @@ function main(error){
 			if(includeplayer(data[a].player_white) && includeplayer(data[a].player_black) && data[a].size>=5 && data[a].notation!="" && data[a].result!="0-0"){// && isbot(data[a].player_white)+isbot(data[a].player_black)!=3){
 				if(data[a].date%86400000 < lasttime%86400000){
 					for(player in players){
-						players[player].participation*=.975
+						players[player].participation=Math.min(players[player].participation*.995,20)
 					}
+					console.log("day")
 				}
 				var hiccup=false
 				if(data[a].date-lasttime<1000 && data[a].player_white===data[a-1].player_white){
@@ -75,6 +96,8 @@ function main(error){
 				lastid=data[a].id
 				if(!hiccup){
 					games++
+					data[a].player_black=nametranslate[data[a].player_black] || data[a].player_black
+					data[a].player_white=nametranslate[data[a].player_white] || data[a].player_white
 					addplayer(data[a].player_white)
 					addplayer(data[a].player_black)
 					var result={"1-0":1,"R-0":1,"F-0":1,"1/2-1/2":0.5,"0-1":0,"0-R":0,"0-F":0}[data[a].result]
@@ -124,7 +147,7 @@ function main(error){
 				console.log("Bot: "+playerlist[a].name)
 			}
 			var listname=playerlist[a].name
-			if({"TakticianBot":1,"alphatak_bot":1,"alphabot":1,"cutak_bot":1,"TakticianBotDev":1,"takkybot":1,"ShlktBot":1,"AlphaTakBot_5x5":1}[playerlist[a].name]){
+			if({"TakticianBot":1,"alphatak_bot":1,"alphabot":1,"cutak_bot":1,"TakticianBotDev":1,"takkybot":1,"ShlktBot":1,"AlphaTakBot_5x5":1,"BeginnerBot":1,"alphatak_bot alphabot":1,"TakticianBot TakticianBotDev":1}[playerlist[a].name]){
 				listname="*"+listname+"*"
 			}
 			out+=(a+1)+"\\. | "+listname+" | "+(playerlist[a].displayrating===playerlist[a].rating?"":"\\*")+Math.floor(playerlist[a].displayrating)+" | "+sign(Math.floor(playerlist[a].displayrating)-Math.floor(playerlist[a].oldrating))+" | "+playerlist[a].games+"\r\n"
@@ -180,10 +203,10 @@ function main(error){
 			}
 		}
 		function includeplayer(name){
-			return name!=="Anon" && name!=="FriendlyBot" && name!=="cutak_bot" && !/^Guest[0-9]+$/.test(name)
+			return name!=="Anon" && name!=="FriendlyBot" && name!=="cutak_bot" && name!=="antakonistbot" && !/^Guest[0-9]+$/.test(name) //&& isbot(name)!==1
 		}
 		function isbot(name){
-			return {"TakticianBot":1,"alphatak_bot":1,"alphabot":1,"cutak_bot":1,"TakticianBotDev":1,"takkybot":1,"ShlktBot":1,"AlphaTakBot_5x5":1,"johnlewis":2}[name]
+			return {"TakticianBot":1,"alphatak_bot":1,"alphabot":1,"cutak_bot":1,"TakticianBotDev":1,"takkybot":1,"ShlktBot":1,"AlphaTakBot_5x5":1,"BeginnerBot":1,"johnlewis":2}[name]
 		}
 		function printcurrentscore(pl,opponent){
 			console.log(players["!"+pl].rating+" "+opponent)
