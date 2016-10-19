@@ -1,5 +1,5 @@
 //The game id of the last game of the last update:
-var lastgameid=67250
+var lastgameid=100191
 
 //Rating calculation parameters:
 var initialrating=1000
@@ -9,14 +9,14 @@ var participationlimit=10
 var participationcutoff=1500
 
 //File names:
-var databasepath="games_anon (12).db"
+var databasepath="games_anon (25).db"
 var resultfile="ratings.txt"
 
 //Statistics parameters, does not affect rating calculation:
-var goodlimit=1700
-var whiteadvantage=130
+var goodlimit=1600
+var whiteadvantage=100
 var showratingprogression=false
-var playerhistory="Turing sectenor"
+var playerhistory="IntuitionBot"
 
 var sqlite3=require("sqlite3")
 var fs=require("fs")
@@ -64,13 +64,34 @@ function main(error){
 			,"Luffy":"Ally Luffy"
 			,"Archerion":"Archerion Archerion2"
 			,"Archerion2":"Archerion Archerion2"
+			,"Simmon":"Simmon Manet"
+			,"Manet":"Simmon Manet"
+			,"Alexc997":"Doodles Alexc997"
+			,"Doodles":"Doodles Alexc997"
+			,"dylandragon":"dylandragon DragonTakerDG"
+			,"DragonTakerDG":"dylandragon DragonTakerDG"
+			,"Abyss":"Abyss Bullet"
+			,"Bullet":"Abyss Bullet"
+			,"Syme":"Syme Saemon"
+			,"Saemon":"Syme Saemon"
+		}
+		var blankexcepted={
+			"Simmon Manet":1
 		}
 		for(a=0;a<200;a++){
 			ratingsum[a]=0
 			ratingcount[a]=0
 		}
+		var cheatcount=0
 		for(a=0;a<data.length;a++){
-			if(includeplayer(data[a].player_white) && includeplayer(data[a].player_black) && data[a].size>=5 && data[a].notation!="" && data[a].result!="0-0"){// && isbot(data[a].player_white)+isbot(data[a].player_black)!=3){
+			data[a].player_black=nametranslate[data[a].player_black] || data[a].player_black
+			data[a].player_white=nametranslate[data[a].player_white] || data[a].player_white
+			var cheatsurrender=(data[a].result=="1-0" && blankexcepted.hasOwnProperty(data[a].player_black)) || (data[a].result=="0-1" && blankexcepted.hasOwnProperty(data[a].player_white))
+			cheatcount+=cheatsurrender
+			if(cheatsurrender){
+				//console.log(data[a].player_black+" "+data[a].player_white+" "+data[a].notation)
+			}
+			if(includeplayer(data[a].player_white) && includeplayer(data[a].player_black) && data[a].size>=5 && (data[a].notation!="" || cheatsurrender) && data[a].result!="0-0"){// && isbot(data[a].player_white)+isbot(data[a].player_black)!=3){
 				if(data[a].date%86400000 < lasttime%86400000){
 					for(player in players){
 						players[player].participation=Math.min(players[player].participation*.995,20)
@@ -94,10 +115,8 @@ function main(error){
 				firsttime=Math.min(firsttime,data[a].date)
 				lasttime=Math.max(lasttime,data[a].date)
 				lastid=data[a].id
-				if(!hiccup){
+				if(!hiccup && data[a].player_white !== data[a].player_black){
 					games++
-					data[a].player_black=nametranslate[data[a].player_black] || data[a].player_black
-					data[a].player_white=nametranslate[data[a].player_white] || data[a].player_white
 					addplayer(data[a].player_white)
 					addplayer(data[a].player_black)
 					var result={"1-0":1,"R-0":1,"F-0":1,"1/2-1/2":0.5,"0-1":0,"0-R":0,"0-F":0}[data[a].result]
@@ -105,7 +124,7 @@ function main(error){
 					var sb=strength(data[a].player_black)
 					var expected=sw/(sw+sb)
 					var fairness=expected*(1-expected)
-					if(sw>Math.pow(10,goodlimit/400) && sb>Math.pow(10,goodlimit/400)){
+					if(sw>Math.pow(10,goodlimit/400) && sb>Math.pow(10,goodlimit/400) && !isbot(data[a].player_white) && !isbot(data[a].player_black) && data[a].size===5){
 						flatcount+=(data[a].result=="F-0" || data[a].result=="0-F")
 						roadcount+=(data[a].result=="R-0" || data[a].result=="0-R")
 						drawcount+=(data[a].result=="1/2-1/2")
@@ -132,22 +151,26 @@ function main(error){
 				}
 			}
 		}
+		console.log(data[data.length-1])
+		//console.log(players.TreffnonX)
+		delete players["!TreffnonX"]
+
 		for(name in players){
 			playerlist.push(players[name])
 		}
 		updatedisplayrating()
 		playerlist.sort(function(a,b){return b.displayrating-a.displayrating})
 		var out=""
-		var ratingsum=0
+		var ratingsumt=0
 		var hiddensum=0
 		for(a=0;a<playerlist.length;a++){
-			ratingsum+=playerlist[a].rating
+			ratingsumt+=playerlist[a].rating
 			hiddensum+=playerlist[a].hidden
 			if(/bot/i.test(playerlist[a].name)){
 				console.log("Bot: "+playerlist[a].name)
 			}
 			var listname=playerlist[a].name
-			if({"TakticianBot":1,"alphatak_bot":1,"alphabot":1,"cutak_bot":1,"TakticianBotDev":1,"takkybot":1,"ShlktBot":1,"AlphaTakBot_5x5":1,"BeginnerBot":1,"alphatak_bot alphabot":1,"TakticianBot TakticianBotDev":1}[playerlist[a].name]){
+			if(isbot(playerlist[a].name)){
 				listname="*"+listname+"*"
 			}
 			out+=(a+1)+"\\. | "+listname+" | "+(playerlist[a].displayrating===playerlist[a].rating?"":"\\*")+Math.floor(playerlist[a].displayrating)+" | "+sign(Math.floor(playerlist[a].displayrating)-Math.floor(playerlist[a].oldrating))+" | "+playerlist[a].games+"\r\n"
@@ -167,11 +190,13 @@ function main(error){
 		console.log("Forfeited or interrupted: "+othercount/goodcount)
 		console.log("White wins: "+whitecount/goodcount)
 		console.log("Black wins: "+blackcount/goodcount)
-		console.log("Expected wins for white, with a white advantage of "+whiteadvantage+" rating points: "+whiteexpected/goodcount)
+		console.log("Expected score for white, with a white advantage of "+whiteadvantage+" rating points: "+whiteexpected/goodcount)
+		console.log("White score: "+(whitecount/goodcount+drawcount/goodcount/2))
 		console.log("Based on "+goodcount+" games with both players rated above "+goodlimit+".")
 		console.log("")
-		console.log("Average rating: "+ratingsum/playerlist.length)
+		console.log("Average rating: "+ratingsumt/playerlist.length)
 		console.log("Average bonus left: "+hiddensum/playerlist.length)
+		console.log(cheatcount)
 		if(showratingprogression){
 			console.log("")
 			console.log("Average rating progression:")
@@ -200,13 +225,17 @@ function main(error){
 		function addplayer(name){
 			if(!players["!"+name]){
 				players["!"+name]={rating:initialrating,hidden:bonusrating,oldrating:initialrating,name:name,games:0,maxrating:initialrating,participation:participationlimit,displayrating:initialrating}
+				/*if(name=="IntuitionBot"){
+					players["!"+name].hidden=0
+					players["!"+name].rating=1700
+				}*/
 			}
 		}
 		function includeplayer(name){
 			return name!=="Anon" && name!=="FriendlyBot" && name!=="cutak_bot" && name!=="antakonistbot" && !/^Guest[0-9]+$/.test(name) //&& isbot(name)!==1
 		}
 		function isbot(name){
-			return {"TakticianBot":1,"alphatak_bot":1,"alphabot":1,"cutak_bot":1,"TakticianBotDev":1,"takkybot":1,"ShlktBot":1,"AlphaTakBot_5x5":1,"BeginnerBot":1,"johnlewis":2}[name]
+			return {"TakticianBot":1,"alphatak_bot":1,"alphabot":1,"cutak_bot":1,"TakticianBotDev":1,"takkybot":1,"ShlktBot":1,"AlphaTakBot_5x5":1,"BeginnerBot":1,"alphatak_bot alphabot":1,"TakticianBot TakticianBotDev":1,"TakkerusBot":1,"IntuitionBot":1}[name]
 		}
 		function printcurrentscore(pl,opponent){
 			console.log(players["!"+pl].rating+" "+opponent)
