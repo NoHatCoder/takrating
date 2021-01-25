@@ -1,5 +1,5 @@
 //The game id of the last game of the last update:
-var lastgameid=100191
+var lastgameid=387485
 
 //Rating calculation parameters:
 var initialrating=1000
@@ -7,16 +7,18 @@ var bonusrating=550
 var bonusfactor=60
 var participationlimit=10
 var participationcutoff=1500
+var maxdrop=200
 
 //File names:
-var databasepath="games_anon (25).db"
+var databasepath="games_anon_2021_01_16.db"
 var resultfile="ratings.txt"
 
 //Statistics parameters, does not affect rating calculation:
+var goodsize=6
 var goodlimit=1600
-var whiteadvantage=100
+var whiteadvantage=69
 var showratingprogression=false
-var playerhistory="IntuitionBot"
+var playerhistory="$NohatCoder"
 
 var sqlite3=require("sqlite3")
 var fs=require("fs")
@@ -46,37 +48,45 @@ function main(error){
 		var ratingsum=[]
 		var ratingcount=[]
 		var nametranslate={
-			"alphabot":"alphatak_bot alphabot"
-			,"alphatak_bot":"alphatak_bot alphabot"
-			,"TakticianBot":"TakticianBot TakticianBotDev"
-			,"TakticianBotDev":"TakticianBot TakticianBotDev"
-			,"sectenor":"Turing sectenor"
-			,"Turing":"Turing sectenor"
-			,"SultanPepper":"SultanPepper KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan"
-			,"KingSultan":"SultanPepper KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan"
-			,"PrinceSultan":"SultanPepper KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan"
-			,"SultanTheGreat":"SultanPepper KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan"
-			,"FuhrerSultan":"SultanPepper KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan"
-			,"MaerSultan":"SultanPepper KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan"
-			,"tarontos":"Tarontos tarontos"
-			,"Tarontos":"Tarontos tarontos"
-			,"Ally":"Ally Luffy"
-			,"Luffy":"Ally Luffy"
-			,"Archerion":"Archerion Archerion2"
-			,"Archerion2":"Archerion Archerion2"
-			,"Simmon":"Simmon Manet"
-			,"Manet":"Simmon Manet"
-			,"Alexc997":"Doodles Alexc997"
-			,"Doodles":"Doodles Alexc997"
-			,"dylandragon":"dylandragon DragonTakerDG"
-			,"DragonTakerDG":"dylandragon DragonTakerDG"
-			,"Abyss":"Abyss Bullet"
-			,"Bullet":"Abyss Bullet"
-			,"Syme":"Syme Saemon"
-			,"Saemon":"Syme Saemon"
+			"alphabot":"alphatak_bot ^alphabot"
+			,"alphatak_bot":"alphatak_bot ^alphabot"
+			,"TakticianBot":"TakticianBot ^TakticianBotDev"
+			,"TakticianBotDev":"TakticianBot ^TakticianBotDev"
+			,"sectenor":"Turing ^sectenor"
+			,"Turing":"Turing ^sectenor"
+			,"SultanPepper":"SultanPepper ^(KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan)"
+			,"KingSultan":"SultanPepper ^(KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan)"
+			,"PrinceSultan":"SultanPepper ^(KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan)"
+			,"SultanTheGreat":"SultanPepper ^(KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan)"
+			,"FuhrerSultan":"SultanPepper ^(KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan)"
+			,"MaerSultan":"SultanPepper ^(KingSultan PrinceSultan SultanTheGreat FuhrerSultan MaerSultan)"
+			,"tarontos":"Tarontos ^tarontos"
+			,"Tarontos":"Tarontos ^tarontos"
+			,"Ally":"Ally ^Luffy"
+			,"Luffy":"Ally ^Luffy"
+			,"Archerion":"Archerion ^Archerion2"
+			,"Archerion2":"Archerion ^Archerion2"
+			,"Simmon":"Simmon ^Manet"
+			,"Manet":"Simmon ^Manet"
+			,"Alexc997":"Doodles ^Alexc997"
+			,"Doodles":"Doodles ^Alexc997"
+			,"dylandragon":"dylandragon ^DragonTakerDG"
+			,"DragonTakerDG":"dylandragon ^DragonTakerDG"
+			,"Abyss":"Abyss ^Bullet"
+			,"Bullet":"Abyss ^Bullet"
+			,"Syme":"Syme ^(Saemon Alpha)"
+			,"Saemon":"Syme ^(Saemon Alpha)"
+			,"Alpha":"Syme ^(Saemon Alpha)"
+			,"LuKAs":"LuKAs ^pse711933"
+			,"pse711933":"LuKAs ^pse711933"
+			,"archvenison":"archvenison ^rossin ^megafauna"
+			,"rossin":"archvenison ^rossin ^megafauna"
+			,"megafauna":"archvenison ^rossin ^megafauna"
+			,"TakkenBot":"TakkenBot ^kriTakBot ^robot"
+			,"kriTakBot":"TakkenBot ^kriTakBot ^robot"
+			,"robot":"TakkenBot ^kriTakBot ^robot"
 		}
 		var blankexcepted={
-			"Simmon Manet":1
 		}
 		for(a=0;a<200;a++){
 			ratingsum[a]=0
@@ -96,20 +106,20 @@ function main(error){
 					for(player in players){
 						players[player].participation=Math.min(players[player].participation*.995,20)
 					}
-					console.log("day")
+					//console.log("day")
 				}
 				var hiccup=false
 				if(data[a].date-lasttime<1000 && data[a].player_white===data[a-1].player_white){
 					hiccup=true
-					//console.log("Hiccup2 "+data[a].result+" "+data[a].date)
+					//console.log("Hiccup2 "+data[a].result+" "+data[a].date+" "+data[a].player_white)
 				}
 				if(a+1!==data.length && data[a+1].date-data[a].date<1000 && data[a+1].player_white===data[a].player_white){
 					if(data[a+1].result.indexOf("0")!==data[a].result.indexOf("0")){
 						hiccup=true
-						//console.log("Hiccup1 "+data[a].result+" "+data[a].date)
+						//console.log("Hiccup1 "+data[a].result+" "+data[a].date+" "+data[a].player_white)
 					}
 					else{
-						//console.log("Nohiccup1 "+data[a].result+" "+data[a].date)
+						//console.log("Nohiccup1 "+data[a].result+" "+data[a].date+" "+data[a].player_white)
 					}
 				}
 				firsttime=Math.min(firsttime,data[a].date)
@@ -124,7 +134,7 @@ function main(error){
 					var sb=strength(data[a].player_black)
 					var expected=sw/(sw+sb)
 					var fairness=expected*(1-expected)
-					if(sw>Math.pow(10,goodlimit/400) && sb>Math.pow(10,goodlimit/400) && !isbot(data[a].player_white) && !isbot(data[a].player_black) && data[a].size===5){
+					if(sw>Math.pow(10,goodlimit/400) && sb>Math.pow(10,goodlimit/400) && !isbot(data[a].player_white) && !isbot(data[a].player_black) && data[a].size===goodsize){
 						flatcount+=(data[a].result=="F-0" || data[a].result=="0-F")
 						roadcount+=(data[a].result=="R-0" || data[a].result=="0-R")
 						drawcount+=(data[a].result=="1/2-1/2")
@@ -151,9 +161,6 @@ function main(error){
 				}
 			}
 		}
-		console.log(data[data.length-1])
-		//console.log(players.TreffnonX)
-		delete players["!TreffnonX"]
 
 		for(name in players){
 			playerlist.push(players[name])
@@ -169,11 +176,11 @@ function main(error){
 			if(/bot/i.test(playerlist[a].name)){
 				console.log("Bot: "+playerlist[a].name)
 			}
-			var listname=playerlist[a].name
+			var listname=playerlist[a].name.replace(/\*/g,"\\*")
 			if(isbot(playerlist[a].name)){
 				listname="*"+listname+"*"
 			}
-			out+=(a+1)+"\\. | "+listname+" | "+(playerlist[a].displayrating===playerlist[a].rating?"":"\\*")+Math.floor(playerlist[a].displayrating)+" | "+sign(Math.floor(playerlist[a].displayrating)-Math.floor(playerlist[a].oldrating))+" | "+playerlist[a].games+"\r\n"
+			out+=(a+1)+"\\.|"+listname+"|"+(playerlist[a].displayrating===playerlist[a].rating?"":"\\*")+Math.floor(playerlist[a].displayrating)+"|"+sign(Math.floor(playerlist[a].displayrating)-Math.floor(playerlist[a].oldrating))+"|"+playerlist[a].games+"\r\n" //"|"+Math.floor(playerlist[a].rating)+"|"+Math.floor(playerlist[a].participation)+
 		}
 		fs.writeFileSync(resultfile,out)
 		console.log("Games: "+games)
@@ -232,19 +239,29 @@ function main(error){
 			}
 		}
 		function includeplayer(name){
-			return name!=="Anon" && name!=="FriendlyBot" && name!=="cutak_bot" && name!=="antakonistbot" && !/^Guest[0-9]+$/.test(name) //&& isbot(name)!==1
+			return name!=="FlashBot" && name!=="Anon" && name!=="FriendlyBot" && name!=="FPABot" && name!=="cutak_bot" && name!=="sTAKbot1" && name!=="sTAKbot2" && name!=="DoubleStackBot" && name!=="antakonistbot" && name!=="CairnBot" && !/^Guest[0-9]+$/.test(name) //&& isbot(name)!==1
 		}
 		function isbot(name){
-			return {"TakticianBot":1,"alphatak_bot":1,"alphabot":1,"cutak_bot":1,"TakticianBotDev":1,"takkybot":1,"ShlktBot":1,"AlphaTakBot_5x5":1,"BeginnerBot":1,"alphatak_bot alphabot":1,"TakticianBot TakticianBotDev":1,"TakkerusBot":1,"IntuitionBot":1}[name]
+			return {"TakticianBot":1,"alphatak_bot":1,"alphabot":1,"cutak_bot":1,"TakticianBotDev":1,"takkybot":1,"ShlktBot":1,"AlphaTakBot_5x5":1,"BeginnerBot":1,"alphatak_bot ^alphabot":1,"TakticianBot ^TakticianBotDev":1,"TakkerusBot":1,"IntuitionBot":1,"AaaarghBot":1,"kriTakBot":1,"TakkenBot":1,"robot":1,"TakkerBot":1,"TakkenBot ^kriTakBot ^robot":1,"Geust93":1,"CairnBot":1,"VerekaiBot1":1,"BloodlessBot":1,"Tiltak_Bot":1,"Taik":1}[name]
 		}
 		function printcurrentscore(pl,opponent){
 			console.log(players["!"+pl].rating+" "+opponent)
 		}
-		function updatedisplayrating(){
+		/*function updatedisplayrating(){
 			for(player in players){
 				players[player].displayrating=players[player].rating
 				if(players[player].participation<participationlimit && players[player].rating>participationcutoff){
 					players[player].displayrating=participationcutoff+(players[player].rating-participationcutoff)*players[player].participation/participationlimit
+				}
+			}
+		}*/
+		function updatedisplayrating(){
+			for(player in players){
+				players[player].displayrating=players[player].rating
+				if(players[player].rating>participationcutoff){
+					if(players[player].participation<participationlimit*Math.min(1,(players[player].rating-participationcutoff)/maxdrop)){
+						players[player].displayrating=Math.max(players[player].rating,participationcutoff+maxdrop)-maxdrop*(1-players[player].participation/participationlimit)
+					}
 				}
 			}
 		}
